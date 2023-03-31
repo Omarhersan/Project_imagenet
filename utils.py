@@ -20,10 +20,11 @@ class DataPreparator:
         self.valData    = None
         pass
 
-    def preprocess_train(self, img_src, annotation):
+    def preprocess_train(self, img_src, annotation, numClasses):
         annotation = annotation.rstrip('\n')
         filename, x_min, y_min, x_max, y_max = annotation.split("\t")
         img_class, _ = filename.split('_')
+        img_class = str(numClasses[img_class])
         img_path = img_src + "/" + filename
         img = cv.imread(str(img_path))
         h,w, _ = img.shape
@@ -38,12 +39,13 @@ class DataPreparator:
 
     def build_train(self):
         classes = os.listdir(self.train_path)
+        numericalClasses = {j: i for i, j in enumerate(classes)}
         train_data = []
         for clas in classes:
             iPath = self.train_path + clas + '/images'
             aPath = self.train_path + clas + f'/{clas}_boxes.txt'
             annotations = open(aPath).read().splitlines()
-            examples = [self.preprocess_train(iPath, item) for item in annotations]
+            examples = [self.preprocess_train(iPath, item, numericalClasses) for item in annotations]
             train_data+=examples
 
         return train_data
@@ -58,7 +60,7 @@ class DataPreparator:
         img = tf.image.convert_image_dtype(img, dtype=tf.float32)
         img = tf.image.resize(img, (50, 50))
 
-        img_Class = str_tensors[1]
+        img_Class = tf.strings.to_number(str_tensors[1])
 
         x_min = tf.strings.to_number(str_tensors[2])
         y_min = tf.strings.to_number(str_tensors[3])
